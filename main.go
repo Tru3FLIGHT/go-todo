@@ -43,17 +43,13 @@ func LoadTasks() ([]Task, error) {
 	return tasks, nil
 }
 
-func testWrite() error {
-	return SaveTasks([]Task{{1, "task 1", false}, {2, "task 2", true}})
-}
-
 func listTasks() error {
 	tasks, err := LoadTasks()
 	if err != nil {
 		return err
 	}
 
-	for i := 0; i < len(tasks); i++ {
+	for i := range tasks {
 		fmt.Println(tasks[i])
 	}
 	return nil
