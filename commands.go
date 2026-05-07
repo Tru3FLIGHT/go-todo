@@ -1,11 +1,21 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"strconv"
 )
 
-func listTasks() error {
+func listTasks(args []string) error {
+
+	listFlags := flag.NewFlagSet("list", flag.ContinueOnError)
+
+	showAll := listFlags.Bool("all", false, "show completed tasks")
+
+	if err := listFlags.Parse(args); err != nil {
+		return err
+	}
+
 	tasks, err := LoadTasks()
 	if err != nil {
 		return err
@@ -13,14 +23,10 @@ func listTasks() error {
 
 	for i := range tasks {
 		task := tasks[i]
-		var comp string
-		if task.Done {
-			comp = "[X]"
-		} else {
-			comp = "[ ]"
+		if task.Done && !*showAll {
+			continue
 		}
-
-		fmt.Println(comp, task.Text)
+		task.prettyPrint()
 	}
 	return nil
 }
@@ -34,11 +40,19 @@ func handleAdd(args []string) error {
 		return err
 	} else {
 		tasks = append(tasks, Task{
-			ID:   tasks.nextId(),
+			ID:   tasks.nextID(),
 			Text: args[0],
 			Done: false})
 		return tasks.Save()
 	}
+}
+
+func parseID(arg string) (int, error) {
+	id, err := strconv.Atoi(arg)
+	if err != nil {
+		return -1, fmt.Errorf("invalid task ID: %q", arg)
+	}
+	return id, nil
 }
 
 func handleToggle(args []string) error {
@@ -46,9 +60,9 @@ func handleToggle(args []string) error {
 		return fmt.Errorf("Usage: todo done [ID]")
 	}
 
-	id, err := strconv.Atoi(args[0])
+	id, err := parseID(args[0])
 	if err != nil {
-		return fmt.Errorf("invalid task ID: %q", args[0])
+		return err
 	}
 
 	tasks, err := LoadTasks()
@@ -61,4 +75,28 @@ func handleToggle(args []string) error {
 	}
 
 	return tasks.Save()
+}
+
+func showTask(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("Usage: todo task [id]")
+	}
+
+	id, err := parseID(args[0])
+	if err != nil {
+		return err
+	}
+
+	tasks, err := LoadTasks()
+	if err != nil {
+		return err
+	}
+
+	index, ok := tasks.indexByID(id)
+	if !ok {
+		return fmt.Errorf("ID does not exist")
+	}
+
+	tasks[index].prettyPrint()
+	return nil
 }

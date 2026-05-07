@@ -28,7 +28,7 @@ func (t TaskList) Save() error {
 	return nil
 }
 
-func (t TaskList) nextId() int {
+func (t TaskList) nextID() int {
 	maxId := 0
 
 	for _, task := range t {
@@ -39,7 +39,7 @@ func (t TaskList) nextId() int {
 	return maxId + 1
 }
 
-func (t TaskList) indexById(id int) (int, bool) {
+func (t TaskList) indexByID(id int) (int, bool) {
 	for i, task := range t {
 		if task.ID == id {
 			return i, true
@@ -48,13 +48,25 @@ func (t TaskList) indexById(id int) (int, bool) {
 	return -1, false
 }
 
+func (t Task) prettyPrint() {
+	var comp string
+	id := fmt.Sprintf("ID: %v", t.ID)
+	if t.Done {
+		comp = "[X]"
+	} else {
+		comp = "[ ]"
+	}
+
+	fmt.Println(id, comp, t.Text)
+}
+
 func (t TaskList) toggleDone(id int) error {
-	i, ok := t.indexById(id)
+	index, ok := t.indexByID(id)
 	if !ok {
 		return fmt.Errorf("task not found by ID")
 	}
 
-	t[i].Done = true
+	t[index].Done = !t[index].Done
 	return nil
 }
 
@@ -91,12 +103,17 @@ func main() {
 		}
 
 	case "list":
-		if err := listTasks(); err != nil {
+		if err := listTasks(args[1:]); err != nil {
 			fmt.Println(err)
 		}
 
 	case "done":
 		if err := handleToggle(args[1:]); err != nil {
+			fmt.Println(err)
+		}
+
+	case "task":
+		if err := showTask(args[1:]); err != nil {
 			fmt.Println(err)
 		}
 	}
