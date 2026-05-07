@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 )
 
 type Task struct {
@@ -29,10 +28,10 @@ func (t TaskList) Save() error {
 	return nil
 }
 
-func (tasks TaskList) nextId() int {
+func (t TaskList) nextId() int {
 	maxId := 0
 
-	for _, task := range tasks {
+	for _, task := range t {
 		if task.ID > maxId {
 			maxId = task.ID
 		}
@@ -40,8 +39,8 @@ func (tasks TaskList) nextId() int {
 	return maxId + 1
 }
 
-func (tasks TaskList) indexById(id int) (int, bool) {
-	for i, task := range tasks {
+func (t TaskList) indexById(id int) (int, bool) {
+	for i, task := range t {
 		if task.ID == id {
 			return i, true
 		}
@@ -49,13 +48,13 @@ func (tasks TaskList) indexById(id int) (int, bool) {
 	return -1, false
 }
 
-func (tasks TaskList) toggleDone(id int) error {
-	i, ok := tasks.indexById(id)
+func (t TaskList) toggleDone(id int) error {
+	i, ok := t.indexById(id)
 	if !ok {
 		return fmt.Errorf("task not found by ID")
 	}
 
-	tasks[i].Done = true
+	t[i].Done = true
 	return nil
 }
 
@@ -75,61 +74,11 @@ func LoadTasks() (TaskList, error) {
 	return tasks, nil
 }
 
-func listTasks() error {
-	tasks, err := LoadTasks()
-	if err != nil {
-		return err
-	}
-
-	for i := range tasks {
-		fmt.Println(tasks[i])
-	}
-	return nil
-}
-
-func handleAdd(args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("Usage: todo add \"task\"")
-	}
-
-	if tasks, err := LoadTasks(); err != nil {
-		return err
-	} else {
-		tasks = append(tasks, Task{
-			ID:   tasks.nextId(),
-			Text: args[0],
-			Done: false})
-		return tasks.Save()
-	}
-}
-
-func handleToggle(args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("Usage: todo done [ID]")
-	}
-
-	id, err := strconv.Atoi(args[0])
-	if err != nil {
-		return fmt.Errorf("invalid task ID: %q", args[0])
-	}
-
-	tasks, err := LoadTasks()
-	if err != nil {
-		return err
-	}
-
-	if err := tasks.toggleDone(id); err != nil {
-		return err
-	}
-
-	return tasks.Save()
-}
-
 func main() {
 	args := os.Args[1:]
 
 	if len(args) == 0 {
-		fmt.Println("Usage: todo [add|list|done]")
+		fmt.Println("Usage: todo [add|list|done|task]")
 		return
 	}
 
