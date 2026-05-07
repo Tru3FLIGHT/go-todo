@@ -4,17 +4,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 )
 
 type Task struct {
-	Id   int    `json:"id"`
+	ID   int    `json:"id"`
 	Text string `json:"text"`
 	Done bool   `json:"done"`
 }
 
+type TaskList []Task
+
 const path string = ".todo"
 
-func SaveTasks(t []Task) error {
+func (t TaskList) Save() error {
 	data, err := json.MarshalIndent(t, "", "   ")
 	if err != nil {
 		return fmt.Errorf("Saving Error: %w", err)
@@ -23,22 +26,51 @@ func SaveTasks(t []Task) error {
 	if err != nil {
 		return fmt.Errorf("unable to write: %w", err)
 	}
-	fmt.Println("Write success")
 	return nil
 }
 
-func LoadTasks() ([]Task, error) {
-	tasks := []Task{}
+func (tasks TaskList) nextId() int {
+	maxId := 0
+
+	for _, task := range tasks {
+		if task.ID > maxId {
+			maxId = task.ID
+		}
+	}
+	return maxId + 1
+}
+
+func (tasks TaskList) indexById(id int) (int, bool) {
+	for i, task := range tasks {
+		if task.ID == id {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+func (tasks TaskList) toggleDone(id int) error {
+	i, ok := tasks.indexById(id)
+	if !ok {
+		return fmt.Errorf("task not found by ID")
+	}
+
+	tasks[i].Done = true
+	return nil
+}
+
+func LoadTasks() (TaskList, error) {
+	tasks := make(TaskList, 0)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return tasks, fmt.Errorf("there is no .todo")
+			return tasks, nil
 		}
 		return tasks, fmt.Errorf("unable to read .todo: %w", err)
 	}
 	err = json.Unmarshal(data, &tasks)
 	if err != nil {
-		return []Task{}, err
+		return TaskList{}, fmt.Errorf("Unable to Parse .todo: %w", err)
 	}
 	return tasks, nil
 }
@@ -55,27 +87,49 @@ func listTasks() error {
 	return nil
 }
 
-func updateId(tasks []Task) []Task {
-	for i, task := range tasks {
-		task.Id = i + 1
-	}
-	return tasks
-}
-
 func handleAdd(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("Usage: todo add \"task\"")
+	}
+
 	if tasks, err := LoadTasks(); err != nil {
 		return err
 	} else {
-		tasks = append(tasks, Task{len(tasks) + 1, args[0], false})
-		return SaveTasks(tasks)
+		tasks = append(tasks, Task{
+			ID:   tasks.nextId(),
+			Text: args[0],
+			Done: false})
+		return tasks.Save()
 	}
+}
+
+func handleToggle(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("Usage: todo done [ID]")
+	}
+
+	id, err := strconv.Atoi(args[0])
+	if err != nil {
+		return fmt.Errorf("invalid task ID: %q", args[0])
+	}
+
+	tasks, err := LoadTasks()
+	if err != nil {
+		return err
+	}
+
+	if err := tasks.toggleDone(id); err != nil {
+		return err
+	}
+
+	return tasks.Save()
 }
 
 func main() {
 	args := os.Args[1:]
 
 	if len(args) == 0 {
-		fmt.Println("Usage: todo [add|list|id]")
+		fmt.Println("Usage: todo [add|list|done]")
 		return
 	}
 
@@ -83,23 +137,18 @@ func main() {
 
 	switch command {
 	case "add":
-		if len(args) == 1 {
-			fmt.Println("todo add [task] [flags]")
-			return
+		if err := handleAdd(args[1:]); err != nil {
+			fmt.Println(err)
 		}
-		handleAdd(args[1:])
+
 	case "list":
 		if err := listTasks(); err != nil {
 			fmt.Println(err)
 		}
-	case "id":
-		if tasks, err := LoadTasks(); err != nil {
+
+	case "done":
+		if err := handleToggle(args[1:]); err != nil {
 			fmt.Println(err)
-		} else {
-			tasks = updateId(tasks)
-			if err = SaveTasks(tasks); err != nil {
-				fmt.Println(err)
-			}
 		}
 	}
 }
