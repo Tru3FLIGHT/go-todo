@@ -116,5 +116,9 @@ func main() {
 		if err := showTask(args[1:]); err != nil {
 			fmt.Println(err)
 		}
+	default:
+		fmt.Printf("Unknown command %v\n", command)
+		fmt.Println("Usage: todo [add|list|done|task]")
+		return
 	}
 }
