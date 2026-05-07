@@ -51,6 +51,7 @@ func (t TaskList) indexByID(id int) (int, bool) {
 func (t Task) prettyPrint() {
 	var comp string
 	id := fmt.Sprintf("ID: %v", t.ID)
+
 	if t.Done {
 		comp = "[X]"
 	} else {
@@ -72,17 +73,22 @@ func (t TaskList) toggleDone(id int) error {
 
 func LoadTasks() (TaskList, error) {
 	tasks := make(TaskList, 0)
+
 	data, err := os.ReadFile(path)
 	if err != nil {
+
 		if os.IsNotExist(err) {
 			return tasks, nil
 		}
+
 		return tasks, fmt.Errorf("unable to read .todo: %w", err)
 	}
+
 	err = json.Unmarshal(data, &tasks)
 	if err != nil {
 		return TaskList{}, fmt.Errorf("Unable to Parse .todo: %w", err)
 	}
+
 	return tasks, nil
 }
 
@@ -90,8 +96,12 @@ func main() {
 	args := os.Args[1:]
 
 	if len(args) == 0 {
-		fmt.Println("Usage: todo [add|list|done|task]")
-		return
+		if err := listTasks(args); err != nil {
+			fmt.Println(err)
+			return
+		} else {
+			return
+		}
 	}
 
 	command := args[0]

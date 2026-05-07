@@ -38,6 +38,7 @@ func handleAdd(args []string) error {
 
 	if tasks, err := LoadTasks(); err != nil {
 		return err
+
 	} else {
 		tasks = append(tasks, Task{
 			ID:   tasks.nextID(),
@@ -72,6 +73,14 @@ func handleToggle(args []string) error {
 
 	if err := tasks.toggleDone(id); err != nil {
 		return err
+	}
+
+	for i := range tasks {
+		task := tasks[i]
+		if task.Done {
+			continue
+		}
+		task.prettyPrint()
 	}
 
 	return tasks.Save()
