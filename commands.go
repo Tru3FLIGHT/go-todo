@@ -86,7 +86,7 @@ func CommandTask(args []string, tasks TaskList) error {
 
 	index, ok := tasks.indexByID(id)
 	if !ok {
-		return fmt.Errorf("ID does not exist")
+		return fmt.Errorf("ID: %v does not exist", id)
 	}
 
 	args = args[1:]
