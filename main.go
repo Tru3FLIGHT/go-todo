@@ -95,8 +95,13 @@ func LoadTasks() (TaskList, error) {
 func main() {
 	args := os.Args[1:]
 
+	tasks, err := LoadTasks()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	if len(args) == 0 {
-		if err := listTasks(args); err != nil {
+		if err := listTasks(args, tasks); err != nil {
 			fmt.Println(err)
 			return
 		} else {
@@ -108,22 +113,22 @@ func main() {
 
 	switch command {
 	case "add":
-		if err := handleAdd(args[1:]); err != nil {
+		if err := handleAdd(args[1:], tasks); err != nil {
 			fmt.Println(err)
 		}
 
 	case "list":
-		if err := listTasks(args[1:]); err != nil {
+		if err := listTasks(args[1:], tasks); err != nil {
 			fmt.Println(err)
 		}
 
 	case "done":
-		if err := handleToggle(args[1:]); err != nil {
+		if err := handleToggle(args[1:], tasks); err != nil {
 			fmt.Println(err)
 		}
 
 	case "task":
-		if err := showTask(args[1:]); err != nil {
+		if err := CommandTask(args[1:], tasks); err != nil {
 			fmt.Println(err)
 		}
 	default:
